@@ -8,7 +8,7 @@ def norm(original, rules):
     s = sum([c for _,c in rules.items()])
     rules = {a: c/s for a, c in rules.items()}
     if original not in rules:
-        rules[original] = 0.0
+        rules[original] = 0.0 if s > 0 else 1
     return rules
 
 def load_rules(rules_path, data, goal_wer, max_iter, stop_iter_treshold):
