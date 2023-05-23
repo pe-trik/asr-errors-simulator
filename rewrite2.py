@@ -12,8 +12,8 @@ CORPUS_INFO_WORD = "<CORPUS_INFO_WORD>"
 def load_rules(rules_path, goal_wer):
     rules = {original: forms for line in open(rules_path).readlines() for original, forms in json.loads(line).items()}
     unk = rules[CORPUS_INFO_WORD]
-    a = (unk['p_insert'] + unk['p_delete']) * 1*unk['p_substitute']
-    b = -(unk['p_insert'] + unk['p_delete'] + 1*unk['p_substitute'])
+    a = - unk['p_delete'] * unk['p_substitute']
+    b = - (unk['p_insert'] + unk['p_delete'] + unk['p_substitute'])
     c = goal_wer
     D = b * b - 4 * a * c
     c1 = (-b + D ** 0.5) / (2 * a)
