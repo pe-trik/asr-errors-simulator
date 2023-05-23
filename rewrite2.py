@@ -53,7 +53,7 @@ def simple_rewrite(line):
 def ispunctuation(x):
     return all(i in string.punctuation for i in x)
 
-def punct_rewrite(line, tokenizer, punct_option="", casing_option="", full_stop=False, cap_start=False):
+def punct_rewrite(line, tokenizer, punct_option="", casing_option="", full_stop=False, cap_start=False, tag_gaps=False):
     o = []
     tokens = tokenizer.tokenize(line)
 
@@ -65,10 +65,10 @@ def punct_rewrite(line, tokenizer, punct_option="", casing_option="", full_stop=
             elif punct_option == "no":
                 continue
         w_orig = w
-        while random_sample() < unk['p_insert']:
+        while random_sample() < unk['p_insert']: # insertion
             o.append(choice(list(r[''].keys()), 1, p=list(r[''].values()))[0])
         if random_sample() < unk['p_transmit']:
-            if random_sample() < unk['p_substitute']:
+            if random_sample() < unk['p_substitute']:  # substitution
                 w = w.lower()
                 if w not in r.keys() or len(r[w]) == 0:
                     idx = randint(0, len(vocab))
@@ -77,11 +77,13 @@ def punct_rewrite(line, tokenizer, punct_option="", casing_option="", full_stop=
                     n = choice(list(r[w].keys()), 1, p=list(r[w].values()))[0]
                 if casing_option == "keep" and w_orig[0].isupper():
                     n = n[0].upper() + n[1:]
-            else:
+            else:  # transmission
                 # keep casing, later it is lowercased if it is also an option
                 n = w_orig
             if n is not None:
                 o.append(n)
+        elif tag_gaps:  # deletion
+            o.append("<gap:%d>" % len(w))
 
     detok = tokenizer.detokenize(o)
     if full_stop:
@@ -128,6 +130,8 @@ if __name__ == '__main__':
     parser.add_argument('--cap-start',action='store_true',default=False,help="Capitalize the first character of each output line.")
     parser.add_argument('--full-stop',action='store_true',default=False,help="Full-stop: make sure that every line of input is terminated by one punctuation mark, \".\" by default, or \"!\", \"?\" or other if keep or random generates it.")
 
+    parser.add_argument('--tag-gaps',action='store_true',default=False,help="Insert tag for every deleted word. The tag has a form e.g. '<gap:N>', where N is a number of characters.")
+
 
     parser.add_argument('--lang', type=str,help=f"Language option for MosesTokenizer. Default is \"en\".",default="en")
 
@@ -164,11 +168,11 @@ if __name__ == '__main__':
     if args.data == "-":
         f = sys.stdin
     else:
-        f = open(args.data,"r") 
+        f = open(args.data,"r")
 
     pool = ProcessPool()
     with open(args.output, 'w') as output:
-        rew = lambda l: punct_rewrite(l, tokenizer, punct_option=args.punct, casing_option=args.casing, cap_start=args.cap_start, full_stop=args.full_stop)
+        rew = lambda l: punct_rewrite(l, tokenizer, punct_option=args.punct, casing_option=args.casing, cap_start=args.cap_start, full_stop=args.full_stop, tag_gaps=args.tag_gaps)
         for r in tqdm.tqdm(pool.imap(rew, f)):
             print(r,file=output)
 
